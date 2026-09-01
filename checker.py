@@ -128,9 +128,8 @@ def test_connection(config, port):
     finally:
         if proc:
             proc.kill()
-            time.sleep(1)  # Ждём освобождения порта
+            time.sleep(1)
 
-# Основная логика
 print("Загружаю черный список...")
 black_text = download(BLACK_URL)
 black_ips = set(re.findall(r"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+", black_text))
@@ -172,7 +171,6 @@ for link in all_links:
         continue
     checked.add(key)
 
-    # Используем случайный порт, чтобы не было конфликтов
     local_port = random.randint(20000, 30000)
 
     print(f"[ТЕСТ] {key}", end="")
@@ -190,7 +188,6 @@ for link in all_links:
     else:
         print(" - МЕРТВЫЙ ✗")
 
-# Сохраняем
 with open("alive.txt", "w") as f:
     for link in alive:
         f.write(link + "\n")
@@ -202,4 +199,3 @@ if alive:
         f.write(encoded)
 
 print(f"\nГОТОВО. Прошло проверку: {len(alive)}")
-input("\nEnter...")
