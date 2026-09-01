@@ -1,0 +1,32 @@
+name: VPN Auto Update
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run checker
+        run: python checker.py < /dev/null
+
+      - name: Commit updates
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add alive.txt subscription.txt
+          git commit -m "Автообновление: $(date -u)" || echo "Нет изменений"
+          git push
