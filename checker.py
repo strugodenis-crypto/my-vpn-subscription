@@ -10,7 +10,7 @@ import urllib.parse
 import random
 
 print("=" * 50)
-print("CONFIG HUNTER v11.0: ФИНАЛЬНЫЙ ТЕСТ")
+print("CONFIG HUNTER v12.0: С ГЕОЛОКАЦИЕЙ")
 print("=" * 50)
 
 BLACK_URL = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_SS%2BAll_RUS.txt"
@@ -33,6 +33,42 @@ def extract_links(text):
 def load_sources():
     with open("sources.txt", "r") as f:
         return [line.strip() for line in f if line.strip() and not line.startswith("#")]
+
+def get_country(ip):
+    """Определяет страну по IP через бесплатный API"""
+    try:
+        r = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            country = data.get("country", "")
+            if country:
+                return country
+    except:
+        pass
+    return ""
+
+def add_country_to_link(link, country):
+    """Добавляет страну в имя конфига"""
+    if not country:
+        return link
+    
+    # Убираем старое имя если есть
+    if "#" in link:
+        link = link.split("#")[0]
+    
+    # Добавляем флаг и страну
+    flag = country_to_flag(country)
+    name = f"{flag} {country}"
+    return f"{link}#{name}"
+
+def country_to_flag(country_code):
+    """Конвертирует код страны в эмодзи флаг"""
+    if not country_code:
+        return "🏳️"
+    try:
+        return chr(ord(country_code[0]) + 127397) + chr(ord(country_code[1]) + 127397)
+    except:
+        return "🏳️"
 
 def parse_vless(link):
     m = re.search(r'vless://([^@]+)@([^:]+):(\d+)', link)
@@ -183,8 +219,16 @@ for link in all_links:
     start = time.time()
     if test_connection(config, local_port):
         elapsed = time.time() - start
+        
+        # Определяем страну
+        country = get_country(real_ip)
+        if country:
+            link = add_country_to_link(link, country)
+            print(f" - ЖИВОЙ ✓ ({elapsed:.1f} сек) [{country}]")
+        else:
+            print(f" - ЖИВОЙ ✓ ({elapsed:.1f} сек)")
+        
         alive.append(link)
-        print(f" - ЖИВОЙ ✓ ({elapsed:.1f} сек)")
     else:
         print(" - МЕРТВЫЙ ✗")
 
