@@ -10,7 +10,7 @@ import urllib.parse
 import random
 
 print("=" * 50)
-print("CONFIG HUNTER v13.0: С ГЕОЛОКАЦИЕЙ И ОЧИСТКОЙ")
+print("CONFIG HUNTER v14.0: ИСПРАВЛЕНИЕ ИСТОЧНИКОВ")
 print("=" * 50)
 
 BLACK_URL = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_SS%2BAll_RUS.txt"
@@ -29,6 +29,9 @@ def extract_links(text):
     for proto in ["vless://", "vmess://", "trojan://", "hysteria2://"]:
         links.extend(re.findall(re.escape(proto) + r'[^\s"<>#]+', text))
     return links
+
+def extract_ips(text):
+    return set(re.findall(r"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+", text))
 
 def load_sources():
     with open("sources.txt", "r") as f:
@@ -159,19 +162,21 @@ def test_connection(config, port):
             proc.kill()
             time.sleep(1)
 
-print("Загружаю черный список...")
+print("Загружаю чёрный список...")
 black_text = download(BLACK_URL)
-black_ips = set(re.findall(r"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+", black_text))
-print(f"Черный список: {len(black_ips)} IP")
+black_ips = extract_ips(black_text)
+print(f"Чёрный список: {len(black_ips)} IP")
 
-print("Загружаю конфиги...")
+print("Загружаю конфиги из всех источников...")
 all_links = []
 for src in load_sources():
     text = download(src)
-    all_links.extend(extract_links(text))
+    links = extract_links(text)
+    all_links.extend(links)
+    print(f"- {src[:60]}: {len(links)} конфигов")
 
 all_links = list(set(all_links))
-print(f"Уникальных ссылок: {len(all_links)}")
+print(f"Всего уникальных конфигов: {len(all_links)}")
 
 alive = []
 checked = set()
@@ -212,14 +217,12 @@ for link in all_links:
     start = time.time()
     if test_connection(config, local_port):
         elapsed = time.time() - start
-
         country = get_country(real_ip)
         if country:
             link = add_country_to_link(link, country)
             print(f" - ЖИВОЙ ✓ ({elapsed:.1f} сек) [{country}]")
         else:
             print(f" - ЖИВОЙ ✓ ({elapsed:.1f} сек)")
-
         alive.append(link)
     else:
         print(" - МЕРТВЫЙ ✗")
